@@ -213,8 +213,8 @@
                 const data = await response.json();
                 loadingIndicator.classList.add('hidden');
 
-                if (data.answer) {
-                    appendBotMessage(data.answer);
+                if (data.response) {
+    appendBotMessage(data.response);
                 } else {
                     appendBotMessage('حدث خطأ أثناء معالجة الإجابة من السيرفر.');
                 }
