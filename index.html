@@ -207,7 +207,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ question: question })
+                    body: JSON.stringify({ message: question })
                 });
 
                 const data = await response.json();
