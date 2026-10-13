@@ -1,50 +1,53 @@
 import os
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from groq import Groq
 
 app = FastAPI()
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# إعداد العميل لربط Groq API
+client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
-# ضع مفتاح Groq الجديد والفعال هنا
-GROQ_API_KEY = "YOUR_GROQ_API_KEY_HERE"
-client = Groq(api_key=GROQ_API_KEY)
+# تحميل ملف المعلومات المخصصة (Knowledge Base)
+def load_knowledge():
+    if os.path.exists("Knowledge.txt"):
+        with open("Knowledge.txt", "r", encoding="utf-8") as f:
+            return f.read()
+    return ""
 
-try:
-    with open("Knowledge.txt", "r", encoding="utf-8") as f:
-        knowledge_base = f.read()
-except Exception:
-    knowledge_base = ""
+knowledge_base = load_knowledge()
 
-class Query(BaseModel):
-    question: str
+class ChatRequest(BaseModel):
+    message: str
 
+# المسار الرئيسي لفتح صفحة index.html
+@app.get("/")
+async def read_index():
+    return FileResponse("index.html")
+
+# مسار المحادثة للذكاء الاصطناعي
 @app.post("/chat")
-async def chat(query: Query):
+async def chat(request: ChatRequest):
     try:
-        completion = client.chat.completions.create(
-            model="openai/gpt-oss-120b",  # تم التحديث إلى النموذج المطلوب
-            messages=[
-                {
-                    "role": "system",
-                    "content": f"أنت مدرب كاليستثنيكس (Calisthenics) محترف ومختص بتمارين وزن الجسم فقط. أجب عن سؤال المستخدم باختصار ووضوح مستعيناً بالمعلومات الموجودة في قاعدة المعرفة التالية:\n\n{knowledge_base}"
-                },
-                {
-                    "role": "user",
-                    "content": query.question
-                }
-            ],
-            temperature=0.3,
+        system_prompt = (
+            "You are an expert Calisthenics & Fitness AI Coach. "
+            "Use the following knowledge base to answer the user accurately:\n\n"
+            f"{knowledge_base}"
         )
-        answer = completion.choices[0].message.content
-        return {"answer": answer}
+        
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": request.message}
+            ],
+            temperature=0.7,
+            max_tokens=1000
+        )
+        
+        reply = completion.choices[0].message.content
+        return {"response": reply}
+    
     except Exception as e:
-        return {"answer": f"حدث خطأ أثناء معالجة السؤال: {str(e)}"}
+        raise HTTPException(status_code=500, detail=str(e))
