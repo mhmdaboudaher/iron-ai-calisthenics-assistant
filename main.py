@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from groq import Groq
 
 app = FastAPI()
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -34,28 +35,17 @@ class ChatRequest(BaseModel):
 async def read_index():
     return FileResponse("index.html")
 
-# مسار المحادثة للذكاء الاصطناعي
+# مسار المحادثة للذكاء الاصطناعي (استبدل الجزء القديم بهذا الكود)
 @app.post("/chat")
 async def chat(request: ChatRequest):
     try:
-        system_prompt = (
-            "You are an expert Calisthenics & Fitness AI Coach. "
-            "Use the following knowledge base to answer the user accurately:\n\n"
-            f"{knowledge_base}"
-        )
-        
         completion = client.chat.completions.create(
             model="openai/gpt-oss-120b",
             messages=[
-                {"role": "system", "content": system_prompt},
+                {"role": "system", "content": f"أنت مساعد تدريبي مختص. استخدم المعلومات التالية للإجابة: {knowledge_base}"},
                 {"role": "user", "content": request.message}
-            ],
-            temperature=0.7,
-            max_tokens=1000
+            ]
         )
-        
-        reply = completion.choices[0].message.content
-        return {"response": reply}
-    
+        return {"response": completion.choices[0].message.content}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
