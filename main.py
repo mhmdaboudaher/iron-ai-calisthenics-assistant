@@ -15,11 +15,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 2. مسار ترحيبي جذري لمنع ظهور Not Found عند فتح الرابط الرئيسي
+@app.get("/")
+def home():
+    return {"status": "Iron-AI Backend is running successfully!"}
+
 @app.options("/chat")
 def options_chat():
     return {}
 
-# 2. نقطة الاتصال الرئيسية للدردشة مع تهيئة العميل داخلياً لتجنب خطأ الإقلاع
+# 3. نقطة الاتصال الرئيسية للدردشة
 @app.post("/chat")
 def chat(payload: dict):
     try:
@@ -43,7 +48,7 @@ def chat(payload: dict):
     except Exception as e:
         return {"error": str(e)}
 
-# 3. ربط المنفذ لمنصة Render
+# 4. ربط المنفذ لمنصة Render
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 10000))
